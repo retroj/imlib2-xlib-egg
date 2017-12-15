@@ -1,0 +1,12 @@
+;; -*- scheme -*-
+
+(compile -s -O2 -d0 imlib2-xlib.scm
+         -L "\"`imlib2-config --libs`\""
+         -C "\"`imlib2-config --cflags`\""
+         -j imlib2-xlib)
+
+(compile -s -O2 imlib2-xlib.import.scm)
+
+(install-extension 'imlib2-xlib
+  '("imlib2-xlib.so" "imlib2-xlib.import.so")
+  `((version "0.0.1")))
