@@ -25,7 +25,11 @@
 ;; ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (module imlib2-xlib
-  ()
+  (
+   imlib-pixmap-and-mask?
+   imlib-pixmap-and-mask-pixmap
+   imlib-pixmap-and-mask-mask
+   )
 
 (import chicken scheme foreign)
 
@@ -111,25 +115,38 @@
 ;; Rendering functions
 ;;
 
-;;XXX: finalizer: imlib_free_pixmap_and_mask
+(define-record-type :imlib-pixmap-and-mask
+  (%make-imlib-pixmap-and-mask pixmap mask)
+  imlib-pixmap-and-mask?
+  (pixmap imlib-pixmap-and-mask-pixmap)
+  (mask imlib-pixmap-and-mask-mask))
+
+(define (free-imlib-pixmap-and-mask! ipm)
+  (%imlib-free-pixmap-and-mask (imlib-pixmap-and-mask-pixmap ipm))
+  (%imlib-free-pixmap-and-mask (imlib-pixmap-and-mask-mask ipm)))
+
+(define (make-imlib-pixmap-and-mask pixmap mask)
+  (let ((ipm (%make-imlib-pixmap-and-mask pixmap mask)))
+    (set-finalizer! ipm free-imlib-pixmap-and-mask!)
+    ipm))
+
 (define (imlib-render-pixmaps-for-whole-image)
   (let-location ((pixmap Pixmap)
                  (mask Pixmap))
     ((foreign-lambda void imlib_render_pixmaps_for_whole_image
                      (c-pointer Pixmap) (c-pointer Pixmap))
      (location pixmap) (location mask))
-    (values pixmap mask)))
+    (make-imlib-pixmap-and-mask pixmap mask)))
 
-;;XXX: finalizer: imlib_free_pixmap_and_mask
 (define (imlib-render-pixmaps-for-whole-image-at-size width height)
   (let-location ((pixmap Pixmap)
                  (mask Pixmap))
     ((foreign-lambda void imlib_render_pixmaps_for_whole_image_at_size
                      (c-pointer Pixmap) (c-pointer Pixmap) int int)
      (location pixmap) (location mask) width height)
-    (values pixmap mask)))
+    (make-imlib-pixmap-and-mask pixmap mask)))
 
-(define imlib-free-pixmap-and-mask
+(define %imlib-free-pixmap-and-mask
   (foreign-lambda void imlib_free_pixmap_and_mask Pixmap))
 
 (define imlib-render-image-on-drawable
