@@ -25,11 +25,34 @@
 ;; ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (module imlib2-xlib
-  (
+  (imlib-context-set-display
+   imlib-context-disconnect-display
+   imlib-context-set-visual
+   imlib-context-set-colormap
+   imlib-context-set-drawable
+   imlib-context-set-mask
+   imlib-context-get-display
+   imlib-context-get-visual
+   imlib-context-get-colormap
+   imlib-context-get-drawable
+   imlib-context-get-mask
+   imlib-get-visual-depth
+   imlib-get-best-visual
    imlib-pixmap-and-mask?
    imlib-pixmap-and-mask-pixmap
    imlib-pixmap-and-mask-mask
-   )
+   imlib-render-pixmaps-for-whole-image
+   imlib-render-pixmaps-for-whole-image-at-size
+   imlib-render-image-on-drawable
+   imlib-render-image-on-drawable-at-size
+   imlib-render-image-part-on-drawable-at-size
+   imlib-render-get-pixel-color
+   imlib-create-image-from-drawable
+   imlib-create-image-from-ximage
+   imlib-create-scaled-image-from-drawable
+   imlib-copy-drawable-to-image
+   imlib-render-image-on-drawable-skewed
+   imlib-render-image-on-drawable-at-angle)
 
 (import chicken scheme foreign)
 
@@ -57,6 +80,7 @@
 (define-foreign-type cbool char
   (lambda (b) (integer->char (if b 1 0)))
   (lambda (c) (if (eqv? #\null c) #f #t)))
+
 
 ;;
 ;; Context setting
