@@ -1,0 +1,92 @@
+== Description
+
+CHICKEN Scheme bindings for Imlib2's Xlib API.
+
+
+== Authors
+
+* John J Foerch
+
+
+== Requirements
+=== Chicken eggs
+
+* [[foreigners]]
+
+=== C headers
+
+* imlib2 development headers
+* X11 development headers (libx11-dev)
+
+
+== API
+=== Datatypes
+
+* XID: Xlib XID (unsigned-long)
+* Colormap: Xlib Colormap (XID)
+* Display: Xlib Display* (c-pointer)
+* Drawable: Xlib Drawable* (XID)
+* Imlib_Image: Imlib2 image (c-pointer)
+* Pixmap: Xlib Pixmap (XID)
+* Screen: int
+* Visual: Xlib Visual* (c-pointer)
+* XImage: Xlib XImage (c-pointer)
+
+
+=== Context setting
+
+* (imlib-context-set-display display)
+* (imlib-context-disconnect-display)
+* (imlib-context-set-visual visual)
+* (imlib-context-set-colormap colormap)
+* (imlib-context-set-drawable drawable)
+* (imlib-context-set-mask pixmap)
+
+
+=== Context getting
+
+* (imlib-context-get-display) => display
+* (imlib-context-get-visual) => visual
+* (imlib-context-get-colormap) => colormap
+* (imlib-context-get-drawable) => drawable
+* (imlib-context-get-mask) => pixmap
+* (imlib-get-visual-depth display visual) => int
+* (imlib-get-best-visual display screen) => (values visual depth)
+
+
+=== Rendering functions
+
+* (imlib-pixmap-and-mask? object) => bool
+* (imlib-pixmap-and-mask-pixmap ipm) => pixmap
+* (imlib-pixmap-and-mask-mask ipm) => pixmap
+* (imlib-render-pixmaps-for-whole-image) => <imlib-pixmap-and-mask>
+* (imlib-render-pixmaps-for-whole-image-at-size width height) => <imlib-pixmap-and-mask>
+* (imlib-render-image-on-drawable x y)
+* (imlib-render-image-on-drawable-at-size x y width height)
+* (imlib-render-image-part-on-drawable-at-size source-x source-y source-width source-height x y width height)
+* (imlib-render-get-pixel-color) => DATA32
+
+
+=== Creation functions
+
+* (imlib-create-image-from-drawable mask-pixmap x y width height need-to-grab-x?) => Imlib_Image
+* (imlib-create-image-from-ximage image-ximage mask-ximage x y width height need-to-grab-x?) => Imlib_Image
+* (imlib-create-scaled-image-from-drawable mask-pixmap source-x source-y source-width source-height destination-width destination-height need-to-grab-x? get-mask-from-shape?) => Imlib_Image
+* (imlib-copy-drawable-to-image mask-pixmap x y width height destination-x destination-y need-to-grab-x?) => cbool
+
+
+=== Rotation / skewing
+
+* (imlib-render-image-on-drawable-skewed source-x source-y source-width source-height destination-x destination-y h-angle-x h-angle-y v-angle-x v-angle-y)
+* (imlib-render-image-on-drawable-at-angle source-x source-y source-width source-height destination-x destination-y angle-x angle-y)
+
+
+== Examples
+
+
+== License
+
+BSD
+
+
+== Version History
