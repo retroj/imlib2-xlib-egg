@@ -9,4 +9,4 @@
 
 (install-extension 'imlib2-xlib
   '("imlib2-xlib.so" "imlib2-xlib.import.so")
-  `((version "0.0.1")))
+  `((version "1.0.0")))
