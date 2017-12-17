@@ -2,6 +2,7 @@
 
 ((synopsis "Chicken bindings for the Imlib2 image library's Xlib API")
  (author "John J. Foerch")
- (depends foreigners)
+ (depends foreigners
+          imlib2)
  (category graphics)
  (license "BSD"))

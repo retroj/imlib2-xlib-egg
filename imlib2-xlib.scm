@@ -56,7 +56,8 @@
 
 (import chicken scheme foreign)
 
-(use foreigners)
+(use foreigners
+     imlib2)
 
 (declare (disable-interrupts))
 
@@ -80,6 +81,35 @@
 (define-foreign-type cbool char
   (lambda (b) (integer->char (if b 1 0)))
   (lambda (c) (if (eqv? #\null c) #f #t)))
+
+
+;;
+;;
+;;
+
+(define (imlib2-xlib-error loc msg . args)
+  (abort (make-composite-condition
+	   (make-property-condition 'exn
+				    'location loc
+				    'message msg
+				    'arguments args)
+	   (make-property-condition 'imlib2-xlib))))
+
+(define (assert-image img loc . args)
+  (when (not (image-ptr img))
+    (imlib2-xlib-error loc "Invalid image parameter" args)))
+
+(define-syntax define/img
+  (syntax-rules ()
+    ((define/img (func img arg ...)
+       body ...)
+     (define (func img arg ...)
+       (assert-image img (quote func) arg ...)
+       (%imlib-context-set-image (image-ptr img))
+       body ...))))
+
+(define %imlib-context-set-image
+  (foreign-lambda void imlib_context_set_image Imlib_Image))
 
 
 ;;
@@ -145,6 +175,9 @@
   (pixmap imlib-pixmap-and-mask-pixmap)
   (mask imlib-pixmap-and-mask-mask))
 
+(define %imlib-free-pixmap-and-mask
+  (foreign-lambda void imlib_free_pixmap_and_mask Pixmap))
+
 (define (free-imlib-pixmap-and-mask! ipm)
   (%imlib-free-pixmap-and-mask (imlib-pixmap-and-mask-pixmap ipm))
   (%imlib-free-pixmap-and-mask (imlib-pixmap-and-mask-mask ipm)))
@@ -154,7 +187,7 @@
     (set-finalizer! ipm free-imlib-pixmap-and-mask!)
     ipm))
 
-(define (imlib-render-pixmaps-for-whole-image)
+(define/img (imlib-render-pixmaps-for-whole-image img)
   (let-location ((pixmap Pixmap)
                  (mask Pixmap))
     ((foreign-lambda void imlib_render_pixmaps_for_whole_image
@@ -162,7 +195,7 @@
      (location pixmap) (location mask))
     (make-imlib-pixmap-and-mask pixmap mask)))
 
-(define (imlib-render-pixmaps-for-whole-image-at-size width height)
+(define/img (imlib-render-pixmaps-for-whole-image-at-size img width height)
   (let-location ((pixmap Pixmap)
                  (mask Pixmap))
     ((foreign-lambda void imlib_render_pixmaps_for_whole_image_at_size
@@ -170,18 +203,20 @@
      (location pixmap) (location mask) width height)
     (make-imlib-pixmap-and-mask pixmap mask)))
 
-(define %imlib-free-pixmap-and-mask
-  (foreign-lambda void imlib_free_pixmap_and_mask Pixmap))
+(define/img (imlib-render-image-on-drawable img x y)
+  ((foreign-lambda void imlib_render_image_on_drawable int int)
+   x y))
 
-(define imlib-render-image-on-drawable
-  (foreign-lambda void imlib_render_image_on_drawable int int))
+(define/img (imlib-render-image-on-drawable-at-size img x y width height)
+  ((foreign-lambda void imlib_render_image_on_drawable_at_size int int int int)
+   x y width height))
 
-(define imlib-render-image-on-drawable-at-size
-  (foreign-lambda void imlib_render_image_on_drawable_at_size int int int int))
-
-(define imlib-render-image-part-on-drawable-at-size
-  (foreign-lambda void imlib_render_image_part_on_drawable_at_size
-                  int int int int int int int int))
+(define/img (imlib-render-image-part-on-drawable-at-size img source-x source-y
+                                                         source-width source-height
+                                                         x y width height)
+  ((foreign-lambda void imlib_render_image_part_on_drawable_at_size
+                   int int int int int int int int)
+   source-x source-y source-width source-height x y width height))
 
 (define imlib-render-get-pixel-color
   (foreign-lambda DATA32 imlib_render_get_pixel_color))
@@ -192,34 +227,56 @@
 ;; Creation functions
 ;;
 
-(define imlib-create-image-from-drawable
-  (foreign-lambda Imlib_Image imlib_create_image_from_drawable
-                  Pixmap int int int int cbool))
+(define (imlib-create-image-from-drawable mask x y width height need-to-grab-x?)
+  (make-image
+   ((foreign-lambda Imlib_Image imlib_create_image_from_drawable
+                    Pixmap int int int int cbool)
+    mask x y width height need-to-grab-x?)))
 
-(define imlib-create-image-from-ximage
-  (foreign-lambda Imlib_Image imlib_create_image_from_ximage
-                  XImage XImage int int int int cbool))
+(define (imlib-create-image-from-ximage ximage mask x y width height need-to-grab-x?)
+  (make-image
+   ((foreign-lambda Imlib_Image imlib_create_image_from_ximage
+                    XImage XImage int int int int cbool)
+    ximage mask x y width height need-to-grab-x?)))
 
-(define imlib-create-scaled-image-from-drawable
-  (foreign-lambda Imlib_Image imlib_create_scaled_image_from_drawable
-                  Pixmap int int int int int int cbool cbool))
+(define (imlib-create-scaled-image-from-drawable mask source-x source-y
+                                                 source-width source-height
+                                                 dest-width dest-height
+                                                 need-to-grab-x?
+                                                 get-mask-from-shape?)
+  (make-image
+   ((foreign-lambda Imlib_Image imlib_create_scaled_image_from_drawable
+                    Pixmap int int int int int int cbool cbool)
+    mask source-x source-y source-width source-height
+    dest-width dest-height need-to-grab-x? get-mask-from-shape?)))
 
-(define imlib-copy-drawable-to-image
-  (foreign-lambda cbool imlib_copy_drawable_to_image
-                  Pixmap int int int int int int cbool))
-
+(define/img (imlib-copy-drawable-to-image img mask x y width height
+                                          dest-x dest-y need-to-grab-x?)
+  ((foreign-lambda cbool imlib_copy_drawable_to_image
+                   Pixmap int int int int int int cbool)
+   mask x y width height dest-x dest-y need-to-grab-x?))
 
 
 ;;
 ;; Rotation / skewing
 ;;
 
-(define imlib-render-image-on-drawable-skewed
-  (foreign-lambda void imlib_render_image_on_drawable_skewed
-                  int int int int int int int int int int))
+(define/img (imlib-render-image-on-drawable-skewed img source-x source-y
+                                                   source-width source-height
+                                                   dest-x dest-y
+                                                   h-angle-x h-angle-y
+                                                   v-angle-x v-angle-y)
+  ((foreign-lambda void imlib_render_image_on_drawable_skewed
+                   int int int int int int int int int int)
+   source-x source-y source-width source-height dest-x dest-y
+   h-angle-x h-angle-y v-angle-x v-angle-y))
 
-(define imlib-render-image-on-drawable-at-angle
-  (foreign-lambda void imlib_render_image_on_drawable_at_angle
-                  int int int int int int int int))
+(define/img (imlib-render-image-on-drawable-at-angle img source-x source-y
+                                                     source-width source-height
+                                                     dest-x dest-y
+                                                     angle-x angle-y)
+  ((foreign-lambda void imlib_render_image_on_drawable_at_angle
+                   int int int int int int int int)
+   source-x source-y source-width source-height dest-x dest-y angle-x angle-y))
 
 )
