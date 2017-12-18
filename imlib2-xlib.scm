@@ -228,27 +228,33 @@
 ;;
 
 (define (imlib-create-image-from-drawable mask x y width height need-to-grab-x?)
-  (make-image
-   ((foreign-lambda Imlib_Image imlib_create_image_from_drawable
-                    Pixmap int int int int cbool)
-    mask x y width height need-to-grab-x?)))
+  (set-finalizer!
+   (make-image
+    ((foreign-lambda Imlib_Image imlib_create_image_from_drawable
+                     Pixmap int int int int cbool)
+     mask x y width height need-to-grab-x?))
+   gc-collect-image))
 
 (define (imlib-create-image-from-ximage ximage mask x y width height need-to-grab-x?)
-  (make-image
-   ((foreign-lambda Imlib_Image imlib_create_image_from_ximage
-                    XImage XImage int int int int cbool)
-    ximage mask x y width height need-to-grab-x?)))
+  (set-finalizer!
+   (make-image
+    ((foreign-lambda Imlib_Image imlib_create_image_from_ximage
+                     XImage XImage int int int int cbool)
+     ximage mask x y width height need-to-grab-x?))
+   gc-collect-image))
 
 (define (imlib-create-scaled-image-from-drawable mask source-x source-y
                                                  source-width source-height
                                                  dest-width dest-height
                                                  need-to-grab-x?
                                                  get-mask-from-shape?)
-  (make-image
-   ((foreign-lambda Imlib_Image imlib_create_scaled_image_from_drawable
-                    Pixmap int int int int int int cbool cbool)
-    mask source-x source-y source-width source-height
-    dest-width dest-height need-to-grab-x? get-mask-from-shape?)))
+  (set-finalizer!
+   (make-image
+    ((foreign-lambda Imlib_Image imlib_create_scaled_image_from_drawable
+                     Pixmap int int int int int int cbool cbool)
+     mask source-x source-y source-width source-height
+     dest-width dest-height need-to-grab-x? get-mask-from-shape?))
+   gc-collect-image))
 
 (define/img (imlib-copy-drawable-to-image img mask x y width height
                                           dest-x dest-y need-to-grab-x?)
