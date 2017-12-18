@@ -97,3 +97,4 @@ BSD
 == Version History
 
 * 1.0.0 (2017-12-17) initial release
+* 1.0.1 (2017-12-17) finalizers on created images
